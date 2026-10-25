@@ -1,0 +1,25 @@
+/*
+ * Author: 周朔鹏
+ * Date: 2025-08-04
+ * Email: 391902958@qq.com
+ * Website: https://www.euipd.com
+ */
+
+@import "./config";
+
+.el-card__body, .el-main {
+    padding: 20px 20px 0 !important;
+}
+.el-button--primary {
+    color: $colorWhite;
+    background-color: $buttonOnPage;
+    border-color: #409EFF;
+}
+.el-button--primary:hover{
+    color:$colorHover;
+    background-color: $btnHoverBackground;
+}
+.el-form-item--small .el-form-item__content, .el-form-item--small .el-form-item__label {
+    line-height: 28px !important;
+}
+

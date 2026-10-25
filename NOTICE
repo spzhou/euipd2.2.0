@@ -1,0 +1,74 @@
+EUIPD 研发过程管理系统
+Copyright (c) 2025-2026 周朔鹏 (Zhou Shuopeng)
+
+本项目源代码按 MIT 许可证发布，全文见 LICENSE。
+本仓库只包含本项目自身的代码与下列第三方文件；其余第三方依赖由使用者通过
+Maven 与 npm 获取，按各自许可证使用，本项目不对其重新授权。
+
+一、以二进制形式提供的本项目组件
+
+  euipdv2-master/lib/repo/com/course/server/2.2.0/server-2.2.0.jar
+    后端公共库 server，由本项目作者以编译后的 jar 形式提供，按 MIT 许可证发布。
+    本仓库不包含该模块的源代码。
+
+二、随仓库附带的第三方文件
+
+  euipdv2-master/mvnw、mvnw.cmd、.mvn/wrapper/
+    Apache Maven Wrapper，Apache License 2.0。
+
+  euipdv2-vue2/public/static/css/bootstrap.css、public/static/css/fonts/
+    Bootstrap 3.3.7 及 Glyphicons Halflings 字体，Copyright 2011-2016 Twitter, Inc.，MIT License。
+
+  euipdv2-vue2/public/font-awesome/
+    Font Awesome 4.7.0，字体为 SIL OFL 1.1，CSS 为 MIT License。
+
+  euipdv2-vue2/public/static/js/md5.js
+    Paul Johnston 的 JavaScript MD5 实现 2.1 版，BSD License；EUIPD 增加了加盐常量。
+
+  euipdv2-vue2/public/static/css/ace.mini.css
+    少量样式摘自 Ace 后台模板（ace.admin），版权归原作者所有。
+
+三、附带使用条件的第三方依赖
+
+  dhtmlx-gantt 7.1.13 标准版（前端甘特图，src/components/std/gantt.vue）
+    许可证：GPL-2.0。
+    厂商声明标准版只能在 GPL 项目中使用，非 GPL 项目须购买商业授权。
+    分发包含该组件的前端构建产物时，构建产物整体须遵守 GPL-2.0（提供完整源代码
+    并以 GPL-2.0 授权）。闭源或商业分发前，须向 XB Software（https://dhtmlx.com）
+    购买商业授权，或将甘特图替换为宽松许可证的组件。
+
+  bpmn-js 11.1.1（前端流程图）
+    许可证：MIT 加附加条款。渲染的流程图中 bpmn.io 水印及其链接不得移除、修改
+    或被其他元素遮挡。
+
+  MySQL Connector/J 8.0.22（后端数据库驱动）
+    许可证：GPL-2.0，附 Universal FOSS Exception。随开源许可证的软件分发不受限制；
+    闭源分发时宜由使用者自行获取驱动，或改用 MariaDB Connector/J（LGPL-2.1）。
+
+  hutool 5.8.24（后端）
+    许可证：木兰宽松许可证第 2 版（Mulan PSL v2），分发时须保留其版权与许可声明。
+
+  logback、c3p0（后端）
+    许可证：EPL-1.0 与 LGPL-2.1 双许可，可选用 EPL-1.0。
+
+  javax/jakarta 系列 API、Jersey、HK2（后端）
+    许可证：CDDL 或 EPL-2.0，附 GPL-2.0 Classpath Exception，作为依赖使用不受限制。
+
+四、其他依赖
+
+  后端其余依赖为 Apache-2.0、MIT、BSD、EPL 等宽松许可证，完整清单见
+  euipdv2-master/THIRD-PARTY.txt（由 license-maven-plugin 生成）。
+  前端其余运行依赖为 MIT、ISC、BSD、Apache-2.0、0BSD 等宽松许可证，
+  以 package-lock.json 中各包声明的许可证为准。
+
+五、未随仓库附带的内容
+
+  阿里云视频点播上传 SDK（浏览器端 aliyun-upload-sdk 1.5.3 及其依赖的
+  aliyun-oss-sdk 6.17.1、es6-promise）未声明开源许可证，不随仓库附带。
+  使用视频上传功能时，由使用者从阿里云官方下载，放入
+  euipdv2-vue2/public/static/aliyunlib/aliyun-upload-sdk/（目录结构见 README.md）。
+
+  Collabora Online 在线编辑所需的中文字体不随仓库附带，按需运行
+  euipdv2-master/docker/collabora/fetch-fonts.sh 获取，字体按各自许可证使用。
+  MySQL、Redis、MinIO、RabbitMQ、Collabora CODE 等 Docker 镜像由使用者自行拉取，
+  按各镜像的许可证使用。

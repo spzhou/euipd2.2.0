@@ -1,0 +1,266 @@
+# =====================================================================
+# EUIPD 研发过程管理系统 生产部署编排
+# 对外只开放 nginx 的 HTTP 端口；其余组件只在内部网络中互通。
+# 启停与运维使用 ./euipd.sh，参数在 .env 中维护（模板见 .env.example）。
+# =====================================================================
+
+# 容器控制台日志轮转：应用另有按日滚动的文件日志（data/logs），这里只防止控制台输出占满磁盘
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+x-app: &app
+  image: euipd/app:${EUIPD_VERSION:-current}
+  # 镜像由 gateway 服务的 build 段在本机构建，不从镜像仓库拉取
+  pull_policy: never
+  restart: always
+  logging: *default-logging
+  networks: [euipd]
+  volumes:
+    - ./config:/app/config:ro
+    - ./keys:/app/keys:ro
+    - ${DATA_DIR:-./data}/logs:/app/logs
+  depends_on:
+    mysql:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    minio-init:
+      condition: service_completed_successfully
+
+# 传给后端服务的参数：只列应用需要的项，基础组件管理员口令与超级管理员口令不进入应用容器
+x-app-env: &app-env
+  TZ: ${TZ:-Asia/Shanghai}
+  SERVER_HOST: ${SERVER_HOST}
+  HTTP_PORT: ${HTTP_PORT:-80}
+  PUBLIC_URL: ${PUBLIC_URL:-}
+  EUIPD_DOCKER_SUBNET_PREFIX: ${DOCKER_SUBNET_PREFIX:-172.30.0}
+  EUIPD_DB_PASSWORD: ${EUIPD_DB_PASSWORD}
+  EUIPD_REDIS_PASSWORD: ${EUIPD_REDIS_PASSWORD}
+  EUIPD_OSS_ACCESS_KEY_ID: ${EUIPD_OSS_ACCESS_KEY_ID}
+  EUIPD_OSS_ACCESS_KEY_SECRET: ${EUIPD_OSS_ACCESS_KEY_SECRET}
+  EUIPD_INITIAL_PASSWORD: ${EUIPD_INITIAL_PASSWORD}
+  EUIPD_CUSTOMER_ACCESS_KEY_ID: ${EUIPD_CUSTOMER_ACCESS_KEY_ID:-}
+  EUIPD_CUSTOMER_ACCESS_KEY_SECRET: ${EUIPD_CUSTOMER_ACCESS_KEY_SECRET:-}
+  EUIPD_SMS_SIGNATURE: ${EUIPD_SMS_SIGNATURE:-}
+  EUIPD_SMS_VERIFICATION_TEMPLATE: ${EUIPD_SMS_VERIFICATION_TEMPLATE:-}
+  EUIPD_SMS_NOTIFY_TEMPLATE: ${EUIPD_SMS_NOTIFY_TEMPLATE:-}
+  EUIPD_SMS_REGISTER_RECHECK_TEMPLATE: ${EUIPD_SMS_REGISTER_RECHECK_TEMPLATE:-}
+  EUIPD_SMS_REGISTER_PASS_TEMPLATE: ${EUIPD_SMS_REGISTER_PASS_TEMPLATE:-}
+  EUIPD_VOD_ACCESS_KEY_ID: ${EUIPD_VOD_ACCESS_KEY_ID:-}
+  EUIPD_VOD_ACCESS_KEY_SECRET: ${EUIPD_VOD_ACCESS_KEY_SECRET:-}
+  EUIPD_VOD_REGION_ID: ${EUIPD_VOD_REGION_ID:-cn-shanghai}
+  EUIPD_VOD_CATEGORY_ID: ${EUIPD_VOD_CATEGORY_ID:-}
+  EUIPD_VOD_WORKFLOW_ID: ${EUIPD_VOD_WORKFLOW_ID:-}
+  EUIPD_VOD_STORAGE_LOCATION: ${EUIPD_VOD_STORAGE_LOCATION:-}
+  EUIPD_POLYV_USER_ID: ${EUIPD_POLYV_USER_ID:-}
+  EUIPD_POLYV_APP_ID: ${EUIPD_POLYV_APP_ID:-}
+  EUIPD_POLYV_APP_SECRET: ${EUIPD_POLYV_APP_SECRET:-}
+  EUIPD_GITLAB_URL: ${EUIPD_GITLAB_URL:-}
+  EUIPD_GITLAB_TOKEN: ${EUIPD_GITLAB_TOKEN:-}
+  EUIPD_FTP_HOST: ${EUIPD_FTP_HOST:-127.0.0.1}
+  EUIPD_FTP_PORT: ${EUIPD_FTP_PORT:-21}
+  EUIPD_FTP_USERNAME: ${EUIPD_FTP_USERNAME:-}
+  EUIPD_FTP_PASSWORD: ${EUIPD_FTP_PASSWORD:-}
+  EUIPD_FTP_WORKING_DIRECTORY: ${EUIPD_FTP_WORKING_DIRECTORY:-/}
+  EUIPD_OA_HOST: ${EUIPD_OA_HOST:-}
+  EUIPD_OA_APPID: ${EUIPD_OA_APPID:-}
+  EUIPD_OA_SECRET: ${EUIPD_OA_SECRET:-}
+  EUIPD_OA_SPK: ${EUIPD_OA_SPK:-}
+  EUIPD_OA_MATERIAL_FORM_CREATER: ${EUIPD_OA_MATERIAL_FORM_CREATER:-}
+  EUIPD_SQL_SERVER_URL: ${EUIPD_SQL_SERVER_URL:-}
+  EUIPD_SQL_SERVER_USER: ${EUIPD_SQL_SERVER_USER:-}
+  EUIPD_SQL_SERVER_PASSWORD: ${EUIPD_SQL_SERVER_PASSWORD:-}
+
+services:
+
+  mysql:
+    image: ${MYSQL_IMAGE:-mysql:8.0}
+    restart: always
+    logging: *default-logging
+    networks: [euipd]
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: mycourse_bk
+      # 应用专用数据库账号，只有 mycourse_bk 库的权限
+      MYSQL_USER: euipd
+      MYSQL_PASSWORD: ${EUIPD_DB_PASSWORD}
+      # 只在数据目录为空、首次初始化时由 mysql/init/01-init-db.sh 使用
+      SUPER_ADMIN_PHONE: ${SUPER_ADMIN_PHONE:-}
+      SUPER_ADMIN_NAME: ${SUPER_ADMIN_NAME:-}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
+    command: ["--default-authentication-plugin=mysql_native_password"]
+    volumes:
+      - ${DATA_DIR:-./data}/mysql:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/euipd.cnf:ro
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+      - ./mysql/db:/euipd-db:ro
+    healthcheck:
+      # 初始化阶段的临时实例不监听 TCP，建表与写入超级管理员完成前不会被判定为健康
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysqladmin ping -h 127.0.0.1 --protocol=tcp -uroot --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  redis:
+    image: ${REDIS_IMAGE:-redis:7-alpine}
+    restart: always
+    logging: *default-logging
+    networks: [euipd]
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      REDIS_PASSWORD: ${EUIPD_REDIS_PASSWORD}
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --appendonly yes --maxmemory-policy noeviction"]
+    volumes:
+      - ${DATA_DIR:-./data}/redis:/data
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # MinIO 官方已停止在公开镜像仓库发布社区版镜像，这里使用同一发行版（RELEASE.2025-04-22）的 Bitnami 存档镜像，
+  # 镜像内含 mc 客户端，minio-init 共用该镜像
+  minio:
+    image: ${MINIO_IMAGE:-bitnamilegacy/minio:2025.4.22}
+    restart: always
+    logging: *default-logging
+    networks: [euipd]
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_API_PORT_NUMBER: "9000"
+      MINIO_CONSOLE_PORT_NUMBER: "9001"
+      MINIO_SKIP_CLIENT: "yes"
+    ports:
+      # 管理控制台只绑定本机回环地址，远程使用时经 SSH 端口转发访问
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-18101}:9001"
+    volumes:
+      # 容器内以 uid 1001 运行，宿主目录须归该用户所有（euipd.sh 自动处理）
+      - ${DATA_DIR:-./data}/minio:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # 建桶、创建应用专用账号并同步公共静态资源；执行完即退出，可重复执行
+  minio-init:
+    image: ${MINIO_IMAGE:-bitnamilegacy/minio:2025.4.22}
+    logging: *default-logging
+    networks: [euipd]
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      HOME: /tmp
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      EUIPD_OSS_ACCESS_KEY_ID: ${EUIPD_OSS_ACCESS_KEY_ID}
+      EUIPD_OSS_ACCESS_KEY_SECRET: ${EUIPD_OSS_ACCESS_KEY_SECRET}
+    volumes:
+      - ./minio/init.sh:/init.sh:ro
+      - ./minio/web-assets:/web-assets:ro
+    entrypoint: ["/bin/sh", "/init.sh"]
+
+  gateway:
+    <<: *app
+    build:
+      context: ./app
+      args:
+        JAVA_IMAGE: ${JAVA_IMAGE:-eclipse-temurin:11-jre}
+    environment:
+      <<: *app-env
+      SERVICE: gateway
+      JAVA_OPTS: ${JAVA_OPTS_GATEWAY:--Xms256m -Xmx512m}
+
+  system:
+    <<: *app
+    environment:
+      <<: *app-env
+      SERVICE: system
+      JAVA_OPTS: ${JAVA_OPTS_SYSTEM:--Xms256m -Xmx768m}
+
+  customer:
+    <<: *app
+    environment:
+      <<: *app-env
+      SERVICE: customer
+      JAVA_OPTS: ${JAVA_OPTS_CUSTOMER:--Xms512m -Xmx1536m}
+
+  file2:
+    <<: *app
+    environment:
+      <<: *app-env
+      SERVICE: file2
+      JAVA_OPTS: ${JAVA_OPTS_FILE2:--Xms256m -Xmx1024m}
+
+  ftp:
+    <<: *app
+    environment:
+      <<: *app-env
+      SERVICE: ftp
+      JAVA_OPTS: ${JAVA_OPTS_FTP:--Xms128m -Xmx384m}
+
+  nginx:
+    image: ${NGINX_IMAGE:-nginx:1.27-alpine}
+    restart: always
+    logging: *default-logging
+    networks: [euipd]
+    depends_on: [gateway]
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./nginx/euipd.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./web/dist:/usr/share/nginx/html:ro
+      - ${DATA_DIR:-./data}/logs/nginx:/var/log/nginx
+
+  # Collabora CODE：正式文件转 PDF、Word 导入格式转换与只读在线查看；.env 中 COMPOSE_PROFILES=collabora 时启用
+  collabora:
+    build:
+      context: ./collabora
+      args:
+        COLLABORA_IMAGE: ${COLLABORA_BASE_IMAGE:-collabora/code:24.04.13.2.1}
+    image: euipd/collabora-code:24.04
+    profiles: ["collabora"]
+    restart: always
+    logging: *default-logging
+    networks: [euipd]
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      # 只接受 file2 的 WOPI 地址作为文件来源
+      aliasgroup1: http://file2:18003
+      DONT_GEN_SSL_CERT: "true"
+      # 容器不对外发布端口，转换接口 /cool/convert-to 已在 nginx 拒绝外部访问
+      extra_params: >-
+        --o:ssl.enable=false
+        --o:ssl.termination=${COLLABORA_SSL_TERMINATION:-false}
+        --o:admin_console.enable=false
+        --o:net.frame_ancestors=${SERVER_HOST}:*
+        --o:per_document.max_concurrency=4
+        --o:logging.level=warning
+        --o:net.post_allow.host[0]=.+
+        --o:welcome.enable=false
+    cap_add:
+      - MKNOD
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9980/hosting/discovery > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+networks:
+  euipd:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${DOCKER_SUBNET_PREFIX:-172.30.0}.0/24

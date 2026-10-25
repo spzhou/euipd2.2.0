@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:euipd="http://euipd.com/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  targetNamespace="http://euipd.com/flow">
+  <bpmn:process id="material" name="物料申请" isExecutable="true">
+    <bpmn:startEvent id="start" name="开始"/>
+    <bpmn:userTask id="apply" name="提交申请">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:onComplete action="WRITE_STATUS" status="APPLICATION"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="提交物料申请"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="approve" name="物料审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="MATERIAL_SAVED_APPROVER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="APPLICATION" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="WRITE_STATUS" status="#{approveResult}"/>
+          <euipd:onComplete action="WRITE_BUDGET_EXE" mode="UNPAID" when="#{approveResult=='APPROVED'}"/>
+          <euipd:onComplete action="WRITE_BUDGET_EXE" mode="UNPAID" when="#{approveResult=='PRE_APPROVED'}"/>
+          <euipd:onComplete action="REVOKE_BUDGET_EXE" when="#{approveResult=='REJECT'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="主管经理审批完成"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwApprove" name="审批结论" default="toCancel"/>
+    <bpmn:userTask id="issue" name="发料确认">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="ROLE_IN_ORG" roleCode="MATM" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="APPROVED,PRE_APPROVED" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onEnter action="MATERIAL_ISSUE" mode="PENDING"/>
+          <euipd:onComplete action="MATERIAL_ISSUE" mode="ISSUED" when="#{issueResult=='ISSUED'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="REJECT" when="#{issueResult=='REJECT'}"/>
+          <euipd:onComplete action="REVOKE_BUDGET_EXE" when="#{issueResult=='REJECT'}"/>
+          <euipd:onComplete action="MATERIAL_ISSUE" mode="CLEAR" when="#{issueResult=='REJECT'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="物料管理员发料确认" when="#{issueResult=='ISSUED'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="物料管理员退回" when="#{issueResult=='REJECT'}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwIssue" name="发料结论" default="toIssueRejected"/>
+    <bpmn:userTask id="submit" name="处置并提交">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="APPROVED,PRE_APPROVED,SUPPLEMENT" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="WRITE_STATUS" status="SUBMIT"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="物料处置完成, 提交审批"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="rejected" name="取消或修改重提">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="REJECT" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="WRITE_STATUS" status="#{rejectAction}"/>
+          <euipd:onComplete action="REVOKE_BUDGET_EXE" when="#{rejectAction=='CANCEL'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="物料申请取消" when="#{rejectAction=='CANCEL'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="修改物料申请, 重新提交" when="#{rejectAction=='APPLICATION'}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwRejected" name="驳回处置" default="toEndCancelled"/>
+    <bpmn:userTask id="recheck" name="物料复核">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="MATERIAL_RECHECK" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="WRITE_STATUS" status="#{approveResult}"/>
+          <euipd:onComplete action="WRITE_BUDGET_EXE" mode="PAID" when="#{approveResult=='COMPLETE'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="主管经理审批完成"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwRecheck" name="复核结论" default="toSupplement"/>
+    <bpmn:endEvent id="endComplete" name="结束"/>
+    <bpmn:endEvent id="endCancelled" name="已取消"/>
+
+    <bpmn:sequenceFlow id="toApply" sourceRef="start" targetRef="apply"/>
+    <bpmn:sequenceFlow id="toApprove" sourceRef="apply" targetRef="approve"/>
+    <bpmn:sequenceFlow id="toGwApprove" sourceRef="approve" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="toIssue" name="通过" sourceRef="gwApprove" targetRef="issue">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${approveResult == 'APPROVED' || approveResult == 'PRE_APPROVED'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toCancel" name="不通过" sourceRef="gwApprove" targetRef="rejected"/>
+    <bpmn:sequenceFlow id="toGwIssue" sourceRef="issue" targetRef="gwIssue"/>
+    <bpmn:sequenceFlow id="toSubmit" name="已发料" sourceRef="gwIssue" targetRef="submit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${issueResult == 'ISSUED'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toIssueRejected" name="退回" sourceRef="gwIssue" targetRef="rejected"/>
+    <bpmn:sequenceFlow id="toRecheck" sourceRef="submit" targetRef="recheck"/>
+    <bpmn:sequenceFlow id="toGwRecheck" sourceRef="recheck" targetRef="gwRecheck"/>
+    <bpmn:sequenceFlow id="toComplete" name="通过" sourceRef="gwRecheck" targetRef="endComplete">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${approveResult == 'COMPLETE'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toSupplement" name="退回补充" sourceRef="gwRecheck" targetRef="submit"/>
+    <bpmn:sequenceFlow id="toGwRejected" sourceRef="rejected" targetRef="gwRejected"/>
+    <bpmn:sequenceFlow id="toReapply" name="修改重提" sourceRef="gwRejected" targetRef="approve">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${rejectAction == 'APPLICATION'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toEndCancelled" name="取消" sourceRef="gwRejected" targetRef="endCancelled"/>
+  </bpmn:process>
+</bpmn:definitions>

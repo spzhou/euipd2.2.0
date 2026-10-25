@@ -1,0 +1,144 @@
+/*
+ * Author: 周朔鹏
+ * Date: 2024-12-25
+ * Email: 391902958@qq.com
+ * Website: https://www.euipd.com
+ */
+
+.a4-paper-print {
+    background: white;
+    width: 800px;
+    min-height: 29.7cm;
+    display: block;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+.a4-paper-print-no-height {
+    background: white;
+    width: 800px;
+    display: block;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+.ca-form{
+    margin: 0 0;
+}
+.ca-form-header {
+    font-weight: normal;
+}
+.ca-form-header-line {
+    line-height: 28px;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-bottom: 5px;
+}
+.ca-form-header-line.start{
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-start;
+}
+.ca-form-header-line-label{
+    font-size: 14px;
+}
+.ca-form-header-line-content{
+    font-size: 14px;
+    margin-left: 8px;
+}
+.ca-form-title {
+    margin: 2px auto 15px;
+}
+.ca-form-title-line {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 22px;
+}
+
+.ca-form-content {
+    margin: 6px 0;
+    line-height: 28px;
+}
+.ca-form-content-line{
+    margin-bottom: 10px;
+}
+.ca-form-content-line-label{
+    width: 70px;
+    display: inline-block;
+    vertical-align: top;
+}
+.ca-form-content-line-label.md{
+    width: 100px;
+}
+.ca-form-content-line-label.right{
+    text-align: right;
+    margin-right: 10px;
+}
+.ca-form-content-line-label.lg{
+    width: 130px;
+}
+
+.ca-form-content-line-content{
+    width: 730px;
+    display: inline-block;
+    vertical-align: top;
+}
+.ca-form-content-line-content.width-850{
+    width: 850px;
+}
+.ca-form-content-line-content.width-760{
+    width: 760px;
+}
+
+.ca-form-comment-line-content{
+    margin-left: 70px;
+    width: 730px;
+    margin-top: -6px;
+    margin-bottom: 10px;
+}
+
+.ca-form-footer {
+    margin: 10px 0;
+    line-height: 28px;
+}
+.ca-form-footer-line{
+}
+
+.ca-table {
+    width: 800px;
+}
+.ca-table-header {
+    border-bottom: 0.5px dotted rgb(212, 206, 206);
+}
+.ca-table-header-column-cell{
+    text-align: center;
+    font-size: 13px;
+    padding: 10px 0;
+    word-wrap:break-word;
+    word-break:break-all;
+}
+.ca-table-content {
+    border-bottom: 0.5px dotted rgb(212, 206, 206);
+}
+.ca-table-content-column-cell{
+    text-align: center;
+    font-size: 13px;
+    font-weight: normal;
+    padding: 10px 0;
+    word-wrap:break-word;
+    word-break:break-all;
+}
+.ca-table-sum {
+    border-bottom: 0.5px dotted rgb(212, 206, 206);
+}
+.ca-table-sum-column-cell{
+    text-align: center;
+    font-size: 13px;
+    font-weight: bold;
+    padding: 10px 0;
+    word-wrap:break-word;
+    word-break:break-all;
+}
+
+

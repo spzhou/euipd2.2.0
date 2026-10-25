@@ -1,0 +1,248 @@
+/*
+ * Author: 周朔鹏
+ * Date: 2023-12-24
+ * Email: 391902958@qq.com
+ * Website: https://www.euipd.com
+ */
+
+/*from ace.admin*/
+.tab-content {
+    border: 1px solid #C5D0DC;
+    padding: 16px 12px;
+    position: relative;
+    margin-top: -1px;
+    height: 100%;
+}
+
+.tab-content.no-padding {
+    padding: 0
+}
+
+.tab-content.no-border {
+    border: none;
+    padding: 12px
+}
+
+.tab-content.padding-32 {
+    padding: 32px 24px
+}
+
+.tab-content.no-border.padding-32 {
+    padding: 32px
+}
+
+.tab-content.padding-30 {
+    padding: 30px 23px
+}
+
+.tab-content.no-border.padding-30 {
+    padding: 30px
+}
+
+.tab-content.padding-28 {
+    padding: 28px 21px
+}
+
+.tab-content.no-border.padding-28 {
+    padding: 28px
+}
+
+.tab-content.padding-26 {
+    padding: 26px 20px
+}
+
+.tab-content.no-border.padding-26 {
+    padding: 26px
+}
+
+.tab-content.padding-24 {
+    padding: 24px 18px
+}
+
+.tab-content.no-border.padding-24 {
+    padding: 24px
+}
+
+.tab-content.padding-22 {
+    padding: 22px 17px
+}
+
+.tab-content.no-border.padding-22 {
+    padding: 22px
+}
+
+.tab-content.padding-20 {
+    padding: 20px 15px
+}
+
+.tab-content.no-border.padding-20 {
+    padding: 20px
+}
+
+.tab-content.padding-18 {
+    padding: 18px 14px
+}
+
+.tab-content.no-border.padding-18 {
+    padding: 18px
+}
+
+.tab-content.padding-16 {
+    padding: 16px 12px
+}
+
+.tab-content.no-border.padding-16 {
+    padding: 16px
+}
+
+.tab-content.padding-14 {
+    padding: 14px 11px
+}
+
+.tab-content.no-border.padding-14 {
+    padding: 14px
+}
+
+.tab-content.padding-12 {
+    padding: 12px 9px
+}
+
+.tab-content.no-border.padding-12 {
+    padding: 12px
+}
+
+.tab-content.padding-10 {
+    padding: 10px 8px
+}
+
+.tab-content.no-border.padding-10 {
+    padding: 10px
+}
+
+.tab-content.padding-8 {
+    padding: 8px 6px
+}
+
+.tab-content.no-border.padding-8 {
+    padding: 8px
+}
+
+.tab-content.padding-6 {
+    padding: 6px 5px
+}
+
+.tab-content.no-border.padding-6 {
+    padding: 6px
+}
+
+.tab-content.padding-4 {
+    padding: 4px 3px
+}
+
+.tab-content.no-border.padding-4 {
+    padding: 4px
+}
+
+.tab-content.no-border.padding-2,.tab-content.padding-2 {
+    padding: 2px
+}
+
+.tab-content.no-border.padding-0,.tab-content.padding-0 {
+    padding: 0
+}
+
+
+.hr {
+    display: block;
+    height: 0;
+    overflow: hidden;
+    font-size: 0;
+    border-width: 1px 0 0;
+    border-top: 1px solid #E3E3E3;
+    margin: 12px 0;
+    border-top-color: rgba(0,0,0,.11)
+}
+
+.hr-double {
+    height: 3px;
+    border-top: 1px solid #E3E3E3;
+    border-bottom: 1px solid #E3E3E3;
+    border-top-color: rgba(0,0,0,.11);
+    border-bottom-color: rgba(0,0,0,.11)
+}
+
+.hr-dotted,.hr.dotted {
+    border-style: dotted
+}
+
+.hr-32,.hr32 {
+    margin: 32px 0
+}
+
+.hr-30,.hr30 {
+    margin: 30px 0
+}
+
+.hr-28,.hr28 {
+    margin: 28px 0
+}
+
+.hr-26,.hr26 {
+    margin: 26px 0
+}
+
+.hr-24,.hr24 {
+    margin: 24px 0
+}
+
+.hr-22,.hr22 {
+    margin: 22px 0
+}
+
+.hr-20,.hr20 {
+    margin: 20px 0
+}
+
+.hr-18,.hr18 {
+    margin: 18px 0
+}
+
+.hr-16,.hr16 {
+    margin: 16px 0
+}
+
+.hr-14,.hr14 {
+    margin: 14px 0
+}
+
+.hr-12,.hr12 {
+    margin: 12px 0
+}
+
+.hr-10,.hr10 {
+    margin: 10px 0
+}
+
+.hr-8,.hr8 {
+    margin: 8px 0
+}
+
+.hr-6,.hr6 {
+    margin: 6px 0
+}
+
+.hr-4,.hr4 {
+    margin: 4px 0
+}
+
+.hr-2,.hr2 {
+    margin: 2px 0
+}
+
+.form-actions {
+    display: block;
+    background-color: #F5F5F5;
+    border-top: 1px solid #E5E5E5;
+    padding: 20px 20px;
+}
+

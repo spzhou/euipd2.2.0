@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:euipd="http://euipd.com/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  targetNamespace="http://euipd.com/flow">
+  <bpmn:process id="decompose" name="分解" isExecutable="true">
+    <bpmn:startEvent id="start" name="开始"/>
+    <bpmn:sequenceFlow id="toStep" sourceRef="start" targetRef="step"/>
+    <bpmn:userTask id="step" name="状态步骤">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:onComplete action="WRITE_STATUS" status="#{targetStatus}" when="#{archive=='NO'}"/>
+          <euipd:onComplete action="ARCHIVE" when="#{archive=='YES'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="toGate" sourceRef="step" targetRef="gate"/>
+    <bpmn:exclusiveGateway id="gate" name="是否结束" default="again"/>
+    <bpmn:sequenceFlow id="done" name="结束" sourceRef="gate" targetRef="end">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${terminal == 'YES'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="again" name="继续" sourceRef="gate" targetRef="step"/>
+    <bpmn:endEvent id="end" name="结束"/>
+  </bpmn:process>
+</bpmn:definitions>

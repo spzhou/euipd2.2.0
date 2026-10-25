@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:euipd="http://euipd.com/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  targetNamespace="http://euipd.com/flow">
+  <bpmn:process id="quality" name="质量与缺陷" isExecutable="true">
+    <bpmn:startEvent id="start" name="开始"/>
+    <bpmn:userTask id="save" name="保存">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:onComplete action="WRITE_STATUS" status="SAVE"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="submit" name="提交">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SAVE" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onComplete action="WRITE_STATUS" status="SUBMIT"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="analyze" name="分析">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="QUALITY_FEEDBACK_OWNER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT,SAVE_ANALYSIS" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onComplete action="WRITE_STATUS" status="#{analysisResult}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwAnalyze" name="分析结论" default="toAnalyzeAgain"/>
+    <bpmn:userTask id="feedback" name="结案反馈">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="QUALITY_FEEDBACK_OWNER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="JOB_SUBMIT,REJECT" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onComplete action="WRITE_STATUS" status="RECHECK"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="review" name="编制人复核">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="RECHECK" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onComplete action="WRITE_STATUS" status="#{reviewResult}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwReview" name="复核结论" default="toFeedbackAgain"/>
+    <bpmn:endEvent id="endArchived" name="已归档"/>
+
+    <bpmn:sequenceFlow id="toSave" sourceRef="start" targetRef="save"/>
+    <bpmn:sequenceFlow id="toSubmit" sourceRef="save" targetRef="submit"/>
+    <bpmn:sequenceFlow id="toAnalyze" sourceRef="submit" targetRef="analyze"/>
+    <bpmn:sequenceFlow id="toGwAnalyze" sourceRef="analyze" targetRef="gwAnalyze"/>
+    <bpmn:sequenceFlow id="toFeedback" name="已提交工单" sourceRef="gwAnalyze" targetRef="feedback">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${analysisResult == 'JOB_SUBMIT'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toAnalyzeAgain" name="继续分析" sourceRef="gwAnalyze" targetRef="analyze"/>
+    <bpmn:sequenceFlow id="toReview" sourceRef="feedback" targetRef="review"/>
+    <bpmn:sequenceFlow id="toGwReview" sourceRef="review" targetRef="gwReview"/>
+    <bpmn:sequenceFlow id="toArchived" name="归档" sourceRef="gwReview" targetRef="endArchived">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${reviewResult == 'ARCHIVED'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toFeedbackAgain" name="退回反馈" sourceRef="gwReview" targetRef="feedback"/>
+  </bpmn:process>
+</bpmn:definitions>

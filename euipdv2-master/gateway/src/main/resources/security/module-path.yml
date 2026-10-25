@@ -1,0 +1,181 @@
+# API path prefix -> permission module (longest prefix wins)
+# Used by gateway Scope auth and server ScopeCalculator helpers
+# 与 gateway 同名文件、前端 permission-util.js 的 API_PATH_MODULE_MAP 保持同一份前缀
+mappings:
+  - prefix: /system/rdms/user/
+    module: USER
+  - prefix: /system/rdms/customer/getOutSourcingCustomerList/
+    module: SUB_PROJECT
+  - prefix: /system/rdms/customer/initDefaultDepartment
+    module: WORKER
+  - prefix: /system/rdms/customer/
+    module: CUSTOMER
+  - prefix: /system/rdms/role/user/
+    module: WORKER
+  - prefix: /system/rdms/role/
+    module: ROLE
+  - prefix: /system/rdms/resource/
+    module: RESOURCE
+  - prefix: /system/auth2/api/
+    module: AUTH2
+  - prefix: /system/auth2/
+    module: WORKER
+  - prefix: /system/tenant-ui-policy
+    module: WORKER
+  - prefix: /system/app-info/
+    module: MEMBER
+  - prefix: /system/auth/
+    module: SYSTEM
+  - prefix: /system/
+    module: SYSTEM
+  - prefix: /customer/pre-project/
+    module: PRE_PROJECT
+  - prefix: /customer/function-tree/
+    module: PRE_PROJECT
+  - prefix: /customer/sub-project/
+    module: SUB_PROJECT
+  - prefix: /customer/project-task/
+    module: PROJECT_TASK
+  - prefix: /customer/project-sec-level/
+    module: PROJECT
+  - prefix: /customer/project-manager/
+    module: DIRECTOR
+  - prefix: /customer/project/
+    module: PROJECT
+  - prefix: /customer/milestone/
+    module: MILESTONE
+  - prefix: /customer/gantt/
+    module: GANTT
+  - prefix: /customer/budget-direct-exe/
+    module: FEE
+  - prefix: /customer/budget-direct/
+    module: PROJECT
+  - prefix: /customer/budget-mng/
+    module: BUDGET
+  - prefix: /customer/budget/
+    module: BUDGET
+  - prefix: /customer/fee/
+    module: FEE
+  - prefix: /customer/flow/
+    module: FLOW
+  - prefix: /customer/job-item-process/
+    module: JOB_ITEM_PROCESS
+  - prefix: /customer/job-items/
+    module: JOB_ITEM
+  - prefix: /customer/jobitem-property/
+    module: JOB_ITEM
+  - prefix: /customer/job-level/
+    module: JOB_LEVEL
+  - prefix: /customer/manhour-declare/
+    module: MANHOUR_DECLARE
+  - prefix: /customer/manhour/
+    module: MANHOUR
+  - prefix: /customer/cal-manhour/
+    module: MANHOUR
+  - prefix: /customer/worker/listAllWorkers
+    module: MEMBER
+  - prefix: /customer/worker/listWorkers
+    module: MEMBER
+  - prefix: /customer/worker/getWorkload/
+    module: MEMBER
+  - prefix: /customer/worker/getWorkerManhourInfo/
+    module: MEMBER
+  - prefix: /customer/worker/get-worker-info/
+    module: MEMBER
+  - prefix: /customer/notify/
+    module: MEMBER
+  - prefix: /customer/worker/
+    module: WORKER
+  - prefix: /customer/ipmt/
+    module: WORKER
+  - prefix: /customer/work-calendar/
+    module: WORKER
+  - prefix: /customer/mail/
+    module: MAIL
+  - prefix: /customer/performance/
+    module: PERFORMANCE
+  - prefix: /customer/underline/
+    module: PERFORMANCE
+  - prefix: /customer/department/
+    module: DEPARTMENT
+  - prefix: /customer/boss/
+    module: BOSS
+  - prefix: /customer/pdgm-sysgm/
+    module: DIRECTOR
+  - prefix: /customer/system-manager/
+    module: DIRECTOR
+  - prefix: /customer/product-manager/
+    module: PRODUCT_MANAGER
+  - prefix: /customer/product/
+    module: PRODUCT
+  - prefix: /customer/system/
+    module: PRODUCT
+  - prefix: /customer/character-process/
+    module: CHARACTER_PROCESS
+  - prefix: /customer/character/
+    module: CHARACTER
+  - prefix: /customer/category-project/
+    module: CATEGORY
+  - prefix: /customer/category-file/
+    module: CATEGORY
+  - prefix: /customer/category/
+    module: CATEGORY
+  - prefix: /customer/material/
+    module: MATERIAL
+  - prefix: /customer/cbb/
+    module: CBB
+  - prefix: /customer/quality/
+    module: QUALITY
+  - prefix: /customer/bugfeedback/
+    module: BUG_FEEDBACK
+  - prefix: /customer/demand/
+    module: DEMAND
+  - prefix: /customer/course/
+    module: COURSE
+  - prefix: /customer/chapter/
+    module: CHAPTER
+  - prefix: /customer/section/
+    module: SECTION
+  - prefix: /customer/summary/
+    module: SUMMARY
+  - prefix: /customer/statistics/
+    module: SUMMARY
+  - prefix: /customer/api/gitlab/
+    module: GITLAB
+  - prefix: /customer/web/
+    module: WEB
+  - prefix: /customer/material-stock/
+    module: INVENTORY
+  - prefix: /customer/material-warehouse/
+    module: WAREHOUSE
+  - prefix: /customer/file-apply/
+    module: FILE
+  - prefix: /file/
+    module: FILE
+  - prefix: /ftp/
+    module: FILE
+
+# 精确匹配：请求路径与条目相同才免鉴权
+whitelist:
+  - /system/rdms/user/reset-password
+  - /system/rdms/sms/send
+  - /system/auth2/getToken
+  - /system/auth/login
+  - /system/auth/refresh
+  - /system/auth/logout
+  - /system/auth/jwks
+  - /system/auth/public-key
+  - /system/auth/tenant/switch
+  - /system/auth/password
+  - /system/auth/password/initial
+
+# 前缀匹配：请求路径以条目开头即免鉴权。条目以 / 结尾，其后只接路径参数或下级路径
+whitelist-prefixes:
+  - /system/rdms/user/login-salt/
+  - /system/rdms/user/list-customer/
+  - /system/rdms/customer/get-customer-by-loginname/
+  - /system/rdms/kaptcha/
+  # 登录页介绍视频的播放凭证
+  - /system/vod/
+  # WOPI 由 Collabora 回调，不带用户令牌；file2 校验一次性查看凭证与来源地址
+  - /file/wopi/

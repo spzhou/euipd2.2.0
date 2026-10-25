@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:euipd="http://euipd.com/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  targetNamespace="http://euipd.com/flow">
+  <bpmn:process id="feeApply" name="费用申请" isExecutable="true">
+    <bpmn:startEvent id="start" name="开始"/>
+    <bpmn:userTask id="apply" name="提交申请">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="JOB_EXECUTOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:onComplete action="CHECK_BUDGET_BALANCE" amountField="appliedAmount" denyCode="FEE_BUDGET_OVERFLOW"/>
+          <euipd:onComplete action="WRITE_STATUS" status="APPLICATION"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="提交费用申请"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="approve" name="费用审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="FEE_APPROVER" denyCode="FEE_APPROVER_NOT_FOUND"/>
+          <euipd:guard sourceStates="APPLICATION" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="CHECK_BUDGET_BALANCE" amountField="appliedAmount" denyCode="FEE_BUDGET_OVERFLOW" when="#{approveResult=='APPROVED'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="#{approveResult}"/>
+          <euipd:onComplete action="WRITE_BUDGET_EXE" mode="UNPAID" when="#{approveResult=='APPROVED'}"/>
+          <euipd:onComplete action="REVOKE_BUDGET_EXE" when="#{approveResult=='REJECT'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="批准申请"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwApprove" name="审批结论" default="toCancel"/>
+    <bpmn:userTask id="submit" name="处理并提交报销">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="APPROVED,SUPPLEMENT,SUBMIT" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="WRITE_STATUS" status="SUBMIT"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="费用处理完成, 提交审批"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="cancel" name="取消申请">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="REJECT" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL"/>
+          <euipd:onComplete action="REVOKE_BUDGET_EXE"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="费用申请取消"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="recheck" name="费用复核">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="FEE_APPROVER" denyCode="FEE_APPROVER_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="CHECK_BUDGET_BALANCE" amountField="actualCost" denyCode="FEE_BUDGET_OVERFLOW" when="#{approveResult=='PRE_COMPLETE'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="#{approveResult}"/>
+          <euipd:onComplete action="WRITE_BUDGET_EXE" mode="PAID" when="#{approveResult=='PRE_COMPLETE'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="批准申请"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwRecheck" name="复核结论" default="toSupplement"/>
+    <bpmn:userTask id="archive" name="归档">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="PRE_COMPLETE" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="WRITE_STATUS" status="COMPLETE"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="归档"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:endEvent id="endApproved" name="结束"/>
+    <bpmn:endEvent id="endCancelled" name="已取消"/>
+
+    <bpmn:sequenceFlow id="toApply" sourceRef="start" targetRef="apply"/>
+    <bpmn:sequenceFlow id="toApprove" sourceRef="apply" targetRef="approve"/>
+    <bpmn:sequenceFlow id="toGwApprove" sourceRef="approve" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="toSubmit" name="通过" sourceRef="gwApprove" targetRef="submit">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${approveResult == 'APPROVED'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toCancel" name="不通过" sourceRef="gwApprove" targetRef="cancel"/>
+    <bpmn:sequenceFlow id="toRecheck" sourceRef="submit" targetRef="recheck"/>
+    <bpmn:sequenceFlow id="toGwRecheck" sourceRef="recheck" targetRef="gwRecheck"/>
+    <bpmn:sequenceFlow id="toArchive" name="通过" sourceRef="gwRecheck" targetRef="archive">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${approveResult == 'PRE_COMPLETE'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toSupplement" name="退回补充" sourceRef="gwRecheck" targetRef="submit"/>
+    <bpmn:sequenceFlow id="toEndApproved" sourceRef="archive" targetRef="endApproved"/>
+    <bpmn:sequenceFlow id="toEndCancelled" sourceRef="cancel" targetRef="endCancelled"/>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="diagram-feeApply">
+    <bpmndi:BPMNPlane id="plane-feeApply" bpmnElement="feeApply">
+      <bpmndi:BPMNShape id="shape-start" bpmnElement="start">
+        <omgdc:Bounds x="160" y="212" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-apply" bpmnElement="apply">
+        <omgdc:Bounds x="240" y="190" width="110" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-approve" bpmnElement="approve">
+        <omgdc:Bounds x="400" y="190" width="110" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-gwApprove" bpmnElement="gwApprove" isMarkerVisible="true">
+        <omgdc:Bounds x="560" y="205" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-submit" bpmnElement="submit">
+        <omgdc:Bounds x="680" y="80" width="130" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-cancel" bpmnElement="cancel">
+        <omgdc:Bounds x="680" y="320" width="110" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-recheck" bpmnElement="recheck">
+        <omgdc:Bounds x="870" y="80" width="110" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-gwRecheck" bpmnElement="gwRecheck" isMarkerVisible="true">
+        <omgdc:Bounds x="1030" y="95" width="50" height="50"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-archive" bpmnElement="archive">
+        <omgdc:Bounds x="1140" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-endApproved" bpmnElement="endApproved">
+        <omgdc:Bounds x="1300" y="102" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape-endCancelled" bpmnElement="endCancelled">
+        <omgdc:Bounds x="860" y="342" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge-toApply" bpmnElement="toApply">
+        <omgdi:waypoint x="196" y="230"/>
+        <omgdi:waypoint x="240" y="230"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toApprove" bpmnElement="toApprove">
+        <omgdi:waypoint x="350" y="230"/>
+        <omgdi:waypoint x="400" y="230"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toGwApprove" bpmnElement="toGwApprove">
+        <omgdi:waypoint x="510" y="230"/>
+        <omgdi:waypoint x="560" y="230"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toSubmit" bpmnElement="toSubmit">
+        <omgdi:waypoint x="585" y="205"/>
+        <omgdi:waypoint x="585" y="120"/>
+        <omgdi:waypoint x="680" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toCancel" bpmnElement="toCancel">
+        <omgdi:waypoint x="585" y="255"/>
+        <omgdi:waypoint x="585" y="360"/>
+        <omgdi:waypoint x="680" y="360"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toRecheck" bpmnElement="toRecheck">
+        <omgdi:waypoint x="810" y="120"/>
+        <omgdi:waypoint x="870" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toGwRecheck" bpmnElement="toGwRecheck">
+        <omgdi:waypoint x="980" y="120"/>
+        <omgdi:waypoint x="1030" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toArchive" bpmnElement="toArchive">
+        <omgdi:waypoint x="1080" y="120"/>
+        <omgdi:waypoint x="1140" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toSupplement" bpmnElement="toSupplement">
+        <omgdi:waypoint x="1055" y="145"/>
+        <omgdi:waypoint x="1055" y="220"/>
+        <omgdi:waypoint x="745" y="220"/>
+        <omgdi:waypoint x="745" y="160"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toEndApproved" bpmnElement="toEndApproved">
+        <omgdi:waypoint x="1240" y="120"/>
+        <omgdi:waypoint x="1300" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge-toEndCancelled" bpmnElement="toEndCancelled">
+        <omgdi:waypoint x="790" y="360"/>
+        <omgdi:waypoint x="860" y="360"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

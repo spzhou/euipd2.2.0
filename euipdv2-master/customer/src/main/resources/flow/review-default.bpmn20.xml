@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:euipd="http://euipd.com/bpmn"
+                  xmlns:flowable="http://flowable.org/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  targetNamespace="http://euipd.com/flow">
+  <bpmn:process id="review" name="评审" isExecutable="true">
+    <bpmn:startEvent id="start" name="开始"/>
+    <bpmn:exclusiveGateway id="gwSign" name="是否会签" default="toConclude"/>
+    <bpmn:userTask id="sign" name="会签">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="JOB_EXECUTOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="HANDLING" denyCode="REVIEW_CONCLUDE_STATUS_INVALID"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+      <bpmn:multiInstanceLoopCharacteristics isSequential="false" flowable:collection="${reviewerIds}" flowable:elementVariable="reviewerId"/>
+    </bpmn:userTask>
+    <bpmn:userTask id="conclude" name="审结">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="JOB_EXECUTOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="HANDLING,SUBMIT,CHA_RECHECK,SUB_RECHECK" denyCode="REVIEW_CONCLUDE_STATUS_INVALID"/>
+          <euipd:onComplete action="CONCLUDE_REVIEW"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="recheck" name="再评">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="JOB_EXECUTOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="HANDLING,SUBMIT,CHA_RECHECK,SUB_RECHECK" denyCode="REVIEW_CONCLUDE_STATUS_INVALID"/>
+          <euipd:onComplete action="CONCLUDE_REVIEW"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwResult" name="审结结论" default="toEndPass"/>
+    <bpmn:endEvent id="endPass" name="通过"/>
+    <bpmn:endEvent id="endConditional" name="有条件通过"/>
+    <bpmn:endEvent id="endReject" name="驳回"/>
+
+    <bpmn:sequenceFlow id="startToGw" sourceRef="start" targetRef="gwSign"/>
+    <bpmn:sequenceFlow id="toSign" name="有评委" sourceRef="gwSign" targetRef="sign">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${hasReviewers == 'YES'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toConclude" name="无评委" sourceRef="gwSign" targetRef="conclude"/>
+    <bpmn:sequenceFlow id="signToConclude" sourceRef="sign" targetRef="conclude"/>
+    <bpmn:sequenceFlow id="concludeToGw" sourceRef="conclude" targetRef="gwResult"/>
+    <bpmn:sequenceFlow id="recheckToGw" sourceRef="recheck" targetRef="gwResult"/>
+    <bpmn:sequenceFlow id="toEndPass" name="通过" sourceRef="gwResult" targetRef="endPass"/>
+    <bpmn:sequenceFlow id="toEndConditional" name="有条件通过" sourceRef="gwResult" targetRef="endConditional">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${reviewResult == 'CONDITIONAL'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toEndReject" name="驳回" sourceRef="gwResult" targetRef="endReject">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${reviewResult == 'REJECT'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toRecheck" name="补充再评" sourceRef="gwResult" targetRef="recheck">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${reviewResult == 'SUPPLEMENT'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+  </bpmn:process>
+</bpmn:definitions>

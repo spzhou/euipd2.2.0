@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:euipd="http://euipd.com/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  targetNamespace="http://euipd.com/flow">
+  <bpmn:process id="jobItem" name="工单主干" isExecutable="true">
+    <bpmn:startEvent id="start" name="开始"/>
+    <bpmn:userTask id="issue" name="下发">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:onComplete action="WRITE_STATUS" status="HANDLING"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="handle" name="执行">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="JOB_EXECUTOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="HANDLING" denyCode="JOB_ITEM_STATUS_INVALID"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="WRITE_STATUS" status="SUBMIT" when="#{jobStatus=='SUBMIT'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL" when="#{jobStatus=='CANCEL'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="REFUSE" when="#{jobStatus=='REFUSE'}"/>
+          <euipd:onComplete action="CLOSE_JOB_ITEM" status="COMPLETED" when="#{jobStatus=='COMPLETED'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwHandle" name="执行结论" default="toRoute"/>
+    <bpmn:userTask id="refused" name="待重下发">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="REFUSE" denyCode="JOB_ITEM_STATUS_INVALID"/>
+          <euipd:onComplete action="WRITE_STATUS" status="HANDLING" when="#{jobStatus=='HANDLING'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL" when="#{jobStatus=='CANCEL'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwRefused" name="重下发或取消" default="reissueToHandle"/>
+    <bpmn:exclusiveGateway id="gwRoute" name="提交去向" default="toApproveKeep"/>
+    <bpmn:userTask id="approveSys" name="系统经理审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="PREPROJECT_SYSTEM_MANAGER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT" denyCode="JOB_ITEM_STATUS_INVALID"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='ROUTED'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='TEST'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='PROPERTY'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="HANDLING" when="#{jobStatus=='HANDLING'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL" when="#{jobStatus=='CANCEL'}"/>
+          <euipd:onComplete action="CLOSE_JOB_ITEM" status="COMPLETED" when="#{jobStatus=='COMPLETED'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="approveQuality" name="质量审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="JOB_PRODUCT_MANAGER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT" denyCode="JOB_ITEM_STATUS_INVALID"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='QUALITY'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="HANDLING" when="#{jobStatus=='HANDLING'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL" when="#{jobStatus=='CANCEL'}"/>
+          <euipd:onComplete action="CLOSE_JOB_ITEM" status="COMPLETED" when="#{jobStatus=='COMPLETED'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="approveProd" name="产品经理审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="PREPROJECT_PRODUCT_MANAGER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT" denyCode="JOB_ITEM_STATUS_INVALID"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='ROUTED'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='TEST'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='PROPERTY'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="HANDLING" when="#{jobStatus=='HANDLING'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL" when="#{jobStatus=='CANCEL'}"/>
+          <euipd:onComplete action="CLOSE_JOB_ITEM" status="COMPLETED" when="#{jobStatus=='COMPLETED'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="approveDev" name="子项目经理审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="SUBPROJECT_MANAGER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT" denyCode="JOB_ITEM_STATUS_INVALID"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='ROUTED'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='TEST'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='PROPERTY'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="HANDLING" when="#{jobStatus=='HANDLING'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL" when="#{jobStatus=='CANCEL'}"/>
+          <euipd:onComplete action="CLOSE_JOB_ITEM" status="COMPLETED" when="#{jobStatus=='COMPLETED'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="approveTest" name="测试主管审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="JOB_TEST_MANAGER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT" denyCode="JOB_ITEM_STATUS_INVALID"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='ROUTED'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='TEST'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='PROPERTY'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='BUG'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="HANDLING" when="#{jobStatus=='HANDLING'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL" when="#{jobStatus=='CANCEL'}"/>
+          <euipd:onComplete action="CLOSE_JOB_ITEM" status="COMPLETED" when="#{jobStatus=='COMPLETED'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="approveTester" name="测试人员审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="JOB_PARENT_EXECUTOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT" denyCode="JOB_ITEM_STATUS_INVALID"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='BUG_TEST'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="HANDLING" when="#{jobStatus=='HANDLING'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL" when="#{jobStatus=='CANCEL'}"/>
+          <euipd:onComplete action="CLOSE_JOB_ITEM" status="COMPLETED" when="#{jobStatus=='COMPLETED'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="approveKeep" name="项目经理审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="JOB_PROJECT_MANAGER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="SUBMIT" denyCode="JOB_ITEM_STATUS_INVALID"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='ROUTED'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='TEST'}"/>
+          <euipd:onEnter action="SET_NEXT_NODE" when="#{submitRoute=='PROPERTY'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="HANDLING" when="#{jobStatus=='HANDLING'}"/>
+          <euipd:onComplete action="WRITE_STATUS" status="CANCEL" when="#{jobStatus=='CANCEL'}"/>
+          <euipd:onComplete action="CLOSE_JOB_ITEM" status="COMPLETED" when="#{jobStatus=='COMPLETED'}"/>
+          <euipd:onComplete action="WRITE_PROCESS" text="#{processText}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwApprove" name="审批结论" default="toEndDone"/>
+    <bpmn:endEvent id="endDone" name="完成"/>
+    <bpmn:endEvent id="endCancel" name="已取消"/>
+
+    <bpmn:sequenceFlow id="toIssue" sourceRef="start" targetRef="issue"/>
+    <bpmn:sequenceFlow id="toHandle" sourceRef="issue" targetRef="handle"/>
+    <bpmn:sequenceFlow id="toGwHandle" sourceRef="handle" targetRef="gwHandle"/>
+    <bpmn:sequenceFlow id="toEndCancel" name="取消" sourceRef="gwHandle" targetRef="endCancel">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${jobStatus == 'CANCEL'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toEndRecheck" name="已完成" sourceRef="gwHandle" targetRef="endDone">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${jobStatus == 'COMPLETED'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toRefused" name="拒绝" sourceRef="gwHandle" targetRef="refused">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${jobStatus == 'REFUSE'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toRoute" name="提交审批" sourceRef="gwHandle" targetRef="gwRoute"/>
+    <bpmn:sequenceFlow id="toGwRefused" sourceRef="refused" targetRef="gwRefused"/>
+    <bpmn:sequenceFlow id="refusedCancel" name="取消" sourceRef="gwRefused" targetRef="endCancel">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${jobStatus == 'CANCEL'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="reissueToHandle" name="重下发" sourceRef="gwRefused" targetRef="handle"/>
+    <bpmn:sequenceFlow id="toApproveTest" name="测试" sourceRef="gwRoute" targetRef="approveTest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${submitRoute == 'TEST'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toApproveBug" name="缺陷" sourceRef="gwRoute" targetRef="approveTest">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${submitRoute == 'BUG'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toApproveTester" name="测试人员" sourceRef="gwRoute" targetRef="approveTester">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${submitRoute == 'BUG_TEST'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toApproveQuality" name="质量" sourceRef="gwRoute" targetRef="approveQuality">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${submitRoute == 'QUALITY'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toApproveSys" name="系统经理" sourceRef="gwRoute" targetRef="approveSys">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${submitRoute != 'TEST' && projectType == 'PRE_PROJECT' && definitionJob == true}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toApproveProd" name="产品经理" sourceRef="gwRoute" targetRef="approveProd">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${submitRoute != 'TEST' && projectType == 'PRE_PROJECT' && definitionJob == false}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toApproveDev" name="子项目经理" sourceRef="gwRoute" targetRef="approveDev">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${submitRoute != 'TEST' && (projectType == 'DEV_PROJECT' || projectType == 'SUB_PROJECT')}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toApproveKeep" name="项目经理" sourceRef="gwRoute" targetRef="approveKeep"/>
+    <bpmn:sequenceFlow id="sysToGw" sourceRef="approveSys" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="prodToGw" sourceRef="approveProd" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="devToGw" sourceRef="approveDev" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="testToGw" sourceRef="approveTest" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="testerToGw" sourceRef="approveTester" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="qualityToGw" sourceRef="approveQuality" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="keepToGw" sourceRef="approveKeep" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="rejectToHandle" name="驳回重做" sourceRef="gwApprove" targetRef="handle">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${jobStatus == 'HANDLING'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="approveCancel" name="取消" sourceRef="gwApprove" targetRef="endCancel">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${jobStatus == 'CANCEL'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toEndDone" name="通过" sourceRef="gwApprove" targetRef="endDone"/>
+  </bpmn:process>
+</bpmn:definitions>

@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "lib": ["es6", "dom"],
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "src/**/*.js",
+    "src/**/*.vue",
+    "public/**/*.js",
+    "types.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".git",
+    ".idea",
+    "src/components/rdms/character-create.vue"
+  ],
+  "vueCompilerOptions": {
+    "target": 2.7,
+    "extensions": [".vue"]
+  }
+}

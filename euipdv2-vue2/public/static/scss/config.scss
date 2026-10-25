@@ -1,0 +1,74 @@
+/*
+ * Author: 周朔鹏
+ * Date: 2023-12-30
+ * Email: 391902958@qq.com
+ * Website: https://www.euipd.com
+ */
+
+/*
+  样式规范表
+*/
+$min-width:1226px;  //容器安全区域宽度
+
+// 常规字体大小设置
+$fontA:       80px; //产品站大标题
+$fontB:       38px; //产品站标题
+$fontC:       28px; //导航标题
+$fontD:       26px; //产品站副标题
+$fontE:       24px;
+$fontF:       22px;
+$fontG:       20px; //用在较为重要的文字、操作按钮
+$fontH:       18px; //用于大多数文字
+$fontI:       16px; //用于辅助性文字
+$fontJ:       14px; //用于一般文字
+$fontK:       12px; //系统默认大小
+
+// 常规配色设置
+$colorRed:          #FF0000 !default; //纯红色
+
+$colorBlack:        #000000 !default; //纯黑色
+$colorPrimary:      #409EFF !default; //主题色
+$colorPrimaryLight: rgba(64, 158, 255, 0.6) !default; //主题色
+
+$colorFont:         #606266 !default; //常规文字
+$colorMinorFont:    #909399 !default; //次要文字
+$colorBtn: rgba(64, 158, 255, 0.74) !default; //按钮颜色
+$colorFooter:       rgb(6, 44, 94) !default;
+$colorE:            #C0C4CC !default; //占位文字
+
+$colorBorder:       #e5e5e5 !default; //边框和分割线
+$colorBackground:   #F5F5F5 !default; //
+$tableBackground:   #F5F5F566 !default; //
+$colorFontBoxBack:  rgba(64,158,255,0.04) !default; //文字块背景
+$colorAce:          #2B7DBC !default; //Ace主题色
+$colorSuccess:      #67C23A !default; //成功
+$colorWarning:      #E6A23C !default; //警告
+$colorWarningHover: #F56C6C !default; //警告
+$colorRowApplication: rgba(64, 158, 255, 0.20) !default;
+$colorRowApproved:     rgba(103, 194, 58, 0.08) !default;
+$colorRowReject:       rgba(230, 162, 60, 0.08) !default;
+
+
+
+//$mainBackground:    rgba(0, 0, 0, 0.75);
+$colorPrimaryFont:  #333 !default; //主要文字
+$mainBackground: rgba(0, 56, 131, 0.98);  //主背景
+$btnHoverBackground: rgba(0, 110, 252, 0.6);
+$colorHover:        #EBEEF5 !default; //边框和分割线
+$mainColorFont:     rgba(2,35,79,0.9);  //主题色文字
+$fontOnBackground: #e1e1e1 !default; //#d7d7d7
+$buttonOnBackground: rgba(1, 84, 208, 0.8) !default;
+$buttonOnPage: rgba(11, 109, 253, 0.6) !default;
+$aOnBackground: #2c5884 !default;
+$aHoverOnBackground: #4a7db1 !default;
+$menuTitleColor: #b5d5f5 !default; // MenuItem标题颜色
+$menuTitleHoverColor: #e8f4fd !default; // MenuItem标题悬停颜色
+$lineOnBackground: rgba(245, 253, 255, 0.5) !default;
+$disableButton: rgba(148, 155, 155, 0.5) !default;
+$green: #62cb44 !default;
+$boxDefaultLine: #ededed !default;
+$colorWhite:        #FFFFFF !default; //纯白色
+$defaultBtnBackground: #e2e2e2;
+$defaultBtnHoverBackground: #efefef;
+
+

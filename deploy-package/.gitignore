@@ -1,0 +1,19 @@
+# 构建产物：由 scripts/build-artifacts.sh 从源码生成
+/app/jars/
+/app/VERSION
+/web/
+/mysql/db/
+/mysql/my.cnf
+/minio/web-assets/
+/collabora/
+
+# 服务器本地文件：口令、密钥、数据与备份（模板为 .env.example）
+/.env
+/keys/
+/data/
+/backups/
+/images/
+/EUIPD阿里云测试环境账号口令.md
+
+# 配套工具软件安装包（体积大，按需下载或单独分发）
+/tools-package/

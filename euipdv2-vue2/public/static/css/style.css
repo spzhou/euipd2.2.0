@@ -1,0 +1,33 @@
+/*
+ * Author: 周朔鹏
+ * Date: 2023-04-30
+ * Email: 391902958@qq.com
+ * Website: https://www.euipd.com
+ */
+
+/*表格内容上下居中显示*/
+.table td {
+  vertical-align: middle !important;
+}
+
+/* 全局tab样式优化 - 提高非活跃tab文字的清晰度 */
+.nav-tabs > li > a {
+  color: #606060 !important; /* 设置非活跃tab的文字颜色为深灰色，提高清晰度 */
+  font-weight: 400; /* 稍微加粗字体，增强可读性 */
+}
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus {
+  color: #555 !important; /* 活跃tab保持原有的颜色 */
+  font-weight: 600; /* 活跃tab字体更粗一些，突出显示 */
+}
+
+.nav-tabs > li > a:hover {
+  color: #000 !important; /* 鼠标悬停时文字颜色更深，提供更好的交互反馈 */
+}
+
+/* SweetAlert2 默认 z-index≈1060，低于 Element Dialog(≈2000+)，会被对话框挡住 */
+.swal2-container {
+  z-index: 10000 !important;
+}

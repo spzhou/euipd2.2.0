@@ -1,0 +1,183 @@
+# 本地开发用基础组件。口令取自 docker/.env.local（由 docker/env.example 复制后填写），
+# 启动方式：docker/start-env.sh，或 docker compose --env-file docker/.env.local up -d
+services:
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: euipd-mysql
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?请在 docker/.env.local 中设置 MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: mycourse_bk
+      TZ: Asia/Shanghai
+      # 首次初始化时写入平台超级管理员；留空则跳过，之后可执行 docker/init-super-admin.sh
+      SUPER_ADMIN_PHONE: ${SUPER_ADMIN_PHONE:-}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
+      SUPER_ADMIN_NAME: ${SUPER_ADMIN_NAME:-平台管理员}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./doc/db:/euipd-db:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --default-authentication-plugin=mysql_native_password
+    networks:
+      - euipd-network
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_ROOT_PASSWORD\" mysqladmin ping -h localhost -u root"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Redis 缓存服务
+  redis:
+    image: redis:7-alpine
+    container_name: euipd-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?请在 docker/.env.local 中设置 REDIS_PASSWORD}
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --appendonly yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - euipd-network
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # RabbitMQ 消息队列服务（可选）
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: euipd-rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:?请在 docker/.env.local 中设置 RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:?请在 docker/.env.local 中设置 RABBITMQ_DEFAULT_PASS}
+      TZ: Asia/Shanghai
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - euipd-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO 对象存储（本地替代阿里云 OSS；宿主机端口 18100 / 18101，容器内仍为 MinIO 缺省的 9000 / 9001）
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: euipd-minio
+    restart: always
+    ports:
+      - "18100:9000"   # S3 API
+      - "18101:9001"   # Console Web UI
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?请在 docker/.env.local 中设置 MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?请在 docker/.env.local 中设置 MINIO_ROOT_PASSWORD}
+      TZ: Asia/Shanghai
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - euipd-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+      start_period: 15s
+
+  # 首次创建业务桶（与 file2 oss.bucket / oss.bucket_web 对齐）
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    container_name: euipd-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    networks:
+      - euipd-network
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    # 登录页图片等公共静态资源
+    volumes:
+      - ./docker/minio/web-assets:/web-assets:ro
+    entrypoint: >
+      /bin/sh -c "
+      set -e;
+      mc alias set local http://minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\";
+      mc mb --ignore-existing local/euipd-doc;
+      mc mb --ignore-existing local/euipd-web;
+      mc anonymous set download local/euipd-web;
+      mc cp --recursive --quiet /web-assets/ local/euipd-web/;
+      echo 'MinIO buckets ready: euipd-doc, euipd-web';
+      "
+
+  # Collabora CODE：正式文件 docx→pdf 转换、Word 导入格式转换与只读在线查看（WOPI 客户端）
+  # 镜像在官方镜像上加装公文字体与 fontconfig 映射，见 docker/collabora/Dockerfile
+  collabora:
+    build:
+      context: ./docker/collabora
+      args:
+        COLLABORA_IMAGE: ${COLLABORA_IMAGE:-docker.1ms.run/collabora/code:24.04.13.2.1}
+    image: euipd/collabora-code:24.04
+    container_name: euipd-collabora
+    # 缺省不启动；需要正式文件与 Word 查看时加 --profile rich
+    profiles: ["rich"]
+    restart: always
+    ports:
+      # 只绑本机回环；Docker Desktop 端口转发会改写来源地址，转换接口的来源限制由下方 post_allow 放开
+      - "127.0.0.1:18980:9980"
+    environment:
+      TZ: Asia/Shanghai
+      # WOPI 宿主白名单：只接受 file2 的 /file/wopi/ 作为文件来源
+      aliasgroup1: ${COLLABORA_WOPI_HOST:-http://host.docker.internal:18003}
+      DONT_GEN_SSL_CERT: "true"
+      extra_params: >-
+        --o:ssl.enable=false
+        --o:ssl.termination=false
+        --o:admin_console.enable=false
+        --o:net.frame_ancestors=${COLLABORA_FRAME_ANCESTORS:-http://localhost:* http://127.0.0.1:*}
+        --o:per_document.max_concurrency=4
+        --o:logging.level=warning
+        --o:net.post_allow.host[0]=${COLLABORA_POST_ALLOW:-.+}
+        --o:welcome.enable=false
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    cap_add:
+      - MKNOD
+    networks:
+      - euipd-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9980/hosting/discovery > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 30s
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  euipd-network:
+    driver: bridge

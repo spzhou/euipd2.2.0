@@ -1,0 +1,341 @@
+/*
+ * Author: 周朔鹏
+ * Date: 2024-12-05
+ * Email: 391902958@qq.com
+ * Website: https://www.euipd.com
+ */
+
+@import "./../../../src/../public/static/scss/config.scss";
+
+.ca-sidebar {
+	width: 190px;
+	height: calc(100vh);
+	//height: 100%;
+	float: left;
+	position: static;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+.ca-sidebar:before {
+	display: block;
+	width: inherit;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	z-index: -1;
+	background-color: inherit;
+	border-style: inherit;
+	border-color: inherit;
+	border-width: inherit
+}
+
+.ca-sidebar-nav {
+	overflow: scroll;
+	//width: 100px;
+	width: 190px;
+	height: calc(100vh);
+	//height: 100%;
+	background: $mainBackground;
+	//overflow: hidden;
+	transition: 0.5s;
+}
+
+/*.ca-sidebar-nav:hover {
+    width: 250px;
+}*/
+
+.profile {
+	width: 190px;
+	height: 60px;
+	padding-left: 15px;
+	margin-top: 20px;
+	display: flex;
+}
+
+.profile .profile-img {
+	width: 60px;
+	height: 60px;
+	border-radius: 50%;
+	border: 3px solid $lineOnBackground;
+	overflow: hidden;
+}
+
+.profile .profile-img img {
+	width: 100%;
+	height: 100%;
+	border-radius: 50%;
+	object-fit: cover;
+
+}
+
+.profile-title {
+	height: 60px;
+	margin-left: 15px;
+}
+
+.profile .profile-title .greetings {
+	padding-top: 5px;
+	padding-bottom: 5px;
+	color: $fontOnBackground;
+}
+
+.profile .profile-title .user-name {
+	font-size: 17px;
+	font-weight: 500;
+	color: $fontOnBackground;
+}
+
+.ca-menu-line {
+	width: 60px;
+	height: 1px;
+	background: $lineOnBackground;
+	transition: 0.5s;
+	margin-top: 15px;
+	margin-left: 15px;
+}
+.ca-menu-line-fix-narrow {
+	width: 185px;
+	height: 1px;
+	margin-top: 40px;
+	background: $lineOnBackground;
+	transition: 0.5s;
+	margin-left: 15px;
+}
+
+.ca-menu-line-fix {
+	width: 160px;
+	height: 1px;
+	background: rgba(245, 253, 255, 0.5);
+	transition: 0.5s;
+	margin-top: 15px;
+	margin-left: 15px;
+}
+
+.ca-sidebar-nav:hover .ca-menu-line {
+	width: 160px;
+}
+
+.ca-menu-line-fix {
+	width: 160px;
+	height: 1px;
+	background: rgba(245, 253, 255, 0.5);
+	transition: 0.5s;
+	margin-top: 15px;
+	margin-left: 15px;
+}
+
+.ca-menu {
+	width: 190px;
+	height: 46px;
+	overflow: hidden;
+	transition: 0.5s;
+}
+.ca-menu-group{
+
+}
+
+.ca-menu-open {
+	height: auto;
+}
+.ca-menu-open-product {
+	height: 1050px;
+}
+.ca-menu-open-file {
+	height: 86px;
+}
+
+/*.ca-menu:hover {
+	height: 243;
+}*/
+
+/* 分组标题外层链接：保证块级，避免 a 默认 inline 导致子项错位 */
+.ca-menu > a {
+	display: block;
+	width: 100%;
+	color: inherit;
+	text-decoration: none;
+	outline: none;
+}
+
+.ca-menu-title {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	box-sizing: border-box;
+	width: 90px;
+	height: 40px;
+	border-radius: 10px;
+	margin-top: 3px;
+	margin-left: 0;
+	padding-left: 25px;
+	padding-right: 25px;
+	margin-bottom: 3px;
+	background: rgba(0, 0, 0, 0.5);
+	transition: 0.5s;
+}
+
+.ca-menu-title-form {
+	display: flex;
+	flex-direction: row;
+	flex-wrap: nowrap;
+	align-items: center;
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 190px;
+	height: 40px;
+	border-radius: 10px;
+	margin-top: 3px;
+	margin-left: 0;
+	padding-left: 20px;
+	padding-right: 16px;
+	margin-bottom: 3px;
+	background: $buttonOnBackground;
+	transition: 0.5s;
+}
+
+.ca-sidebar-nav:hover .ca-menu-title {
+	width: 190px;
+}
+
+.ca-menu-title .menu-title {
+	font-size: 15px;
+	font-weight: 500;
+}
+
+.ca-menu-title .menu-spread {
+	font-size: 15px;
+	font-weight: 500;
+}
+
+.ca-menu-title-form .menu-title {
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+	font-size: 15px;
+	font-weight: 500;
+	color: $fontOnBackground;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	line-height: 40px;
+}
+
+.ca-menu-title-form .menu-spread {
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-left: 8px;
+	font-size: 15px;
+	font-weight: 500;
+	color: $fontOnBackground;
+	line-height: 1;
+}
+
+
+.ca-menu-item {
+	height: 40px;
+	display: flex;
+	position: relative;
+	transition: 0.5s;
+	border-radius: 6px;
+}
+
+.ca-menu-item:hover {
+	background: rgba(255, 255, 255, 0.1);
+}
+.ca-menu-item.active {
+	background: rgba(255, 255, 255, 0.1);
+}
+
+.ca-menu-item .light {
+	width: 6px;
+	height: 40px;
+	background: $green;
+	position: absolute;
+	left: 0;
+	transition: 0.5s;
+	border-top-right-radius: 4px;
+	border-bottom-right-radius: 4px;
+	opacity: 0;
+}
+
+.ca-menu-item:hover .light {
+	opacity: 1;
+}
+
+.ca-menu-item .left-icon {
+	position: absolute;
+	left: 15px;
+	width: 40px;
+	height: 40px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	color: rgba(245, 253, 255, 0.5);
+}
+
+.ca-menu-item .menu-content-fix {
+	position: absolute;
+	left: 60px;
+	width: 120px;
+	height: 40px;
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	transition: 0.5s;
+	overflow: hidden;
+	opacity: 1;
+}
+a {
+	color: $aOnBackground;
+	text-decoration: none;
+	outline: none;
+}
+a:hover,
+a:focus,
+a:focus-visible {
+	color: $aHoverOnBackground;
+	outline: none;
+	/*text-decoration: underline;*/
+}
+
+.right-icon {
+	position: absolute;
+	left: 165px;
+	width: 0;
+	height: 40px;
+	transition: 0.5s;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	overflow: hidden;
+	opacity: 0;
+}
+
+.ca-menu-item:hover .right-icon {
+	width: 20px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	opacity: 1;
+}
+
+.ca-menu-item.active .right-icon {
+	width: 20px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	opacity: 1;
+}
+
+.iconfont {
+	font-size: 16px;
+}
+
+.right-icon .iconfont {
+	font-size: 16px;
+	color: $green;
+}

@@ -1,0 +1,23 @@
+/* v-rich-html 输出的正文图片与表格 */
+img[data-asset-id] { max-width: 100%; height: auto; }
+img[data-asset-id][data-align="center"] { display: block; margin-left: auto; margin-right: auto; }
+img[data-asset-id][data-align="right"] { display: block; margin-left: auto; }
+img[data-asset-id][data-align="left"] { display: block; margin-right: auto; }
+.rich-html table, .rich-editor__content table { border-collapse: collapse; margin: 6px 0; }
+.rich-html th, .rich-html td,
+.rich-editor__content th, .rich-editor__content td { border: 1px solid #ccc; padding: 4px 8px; vertical-align: top; min-width: 2em; }
+.rich-html th, .rich-editor__content th { background: #f5f5f5; font-weight: bold; }
+.rich-html th p, .rich-html td p,
+.rich-editor__content th p, .rich-editor__content td p { margin: 0; }
+.rich-editor__content .selectedCell { background: #e8f3fb; }
+/* 迁移的历史内容中 Quill 生成的对齐、缩进与字号类名 */
+.ql-align-center { text-align: center; }
+.ql-align-right { text-align: right; }
+.ql-align-justify { text-align: justify; }
+.ql-indent-1 { padding-left: 3em; }
+.ql-indent-2 { padding-left: 6em; }
+.ql-indent-3 { padding-left: 9em; }
+.ql-indent-4 { padding-left: 12em; }
+.ql-size-small { font-size: 0.75em; }
+.ql-size-large { font-size: 1.5em; }
+.ql-size-huge { font-size: 2.5em; }

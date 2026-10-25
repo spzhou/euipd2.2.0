@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:euipd="http://euipd.com/bpmn"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  targetNamespace="http://euipd.com/flow">
+  <bpmn:process id="fileApply" name="档案申请" isExecutable="true">
+    <bpmn:startEvent id="start" name="开始"/>
+    <bpmn:userTask id="apply" name="提交申请">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="INITIATOR" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:onComplete action="WRITE_STATUS" status="APPLICATION"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:userTask id="approve" name="档案审批">
+      <bpmn:extensionElements>
+        <euipd:node>
+          <euipd:assignee resolver="FILE_OWNER_APPROVER" denyCode="FLOW_ASSIGNEE_NOT_FOUND"/>
+          <euipd:guard sourceStates="APPLICATION" denyCode="LIFECYCLE_TRANSITION_FORBIDDEN"/>
+          <euipd:onEnter action="SET_NEXT_NODE"/>
+          <euipd:onComplete action="WRITE_STATUS" status="#{approveResult}"/>
+        </euipd:node>
+      </bpmn:extensionElements>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="gwApprove" name="审批结论" default="toReject"/>
+    <bpmn:endEvent id="endApproved" name="已同意"/>
+    <bpmn:endEvent id="endRejected" name="已驳回"/>
+
+    <bpmn:sequenceFlow id="toApply" sourceRef="start" targetRef="apply"/>
+    <bpmn:sequenceFlow id="toApprove" sourceRef="apply" targetRef="approve"/>
+    <bpmn:sequenceFlow id="toGwApprove" sourceRef="approve" targetRef="gwApprove"/>
+    <bpmn:sequenceFlow id="toApproved" name="同意" sourceRef="gwApprove" targetRef="endApproved">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"><![CDATA[${approveResult == 'APPROVED'}]]></bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="toReject" name="驳回" sourceRef="gwApprove" targetRef="endRejected"/>
+  </bpmn:process>
+</bpmn:definitions>
